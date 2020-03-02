@@ -16,6 +16,7 @@
           <ButtonText>Generate Dal And Bll For This Entity</ButtonText>
         </Strings>
       </Button>
+      
     </Buttons>
 
     <Bitmaps>

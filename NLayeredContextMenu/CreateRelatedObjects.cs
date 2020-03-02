@@ -65,14 +65,14 @@ namespace NLayeredContextMenu
         {
             get
             {
-                return this.package;
+                return package;
             }
         }
         private IServiceProvider SyncServiceProvider
         {
             get
             {
-                return this.package;
+                return package;
             }
         }
         /// <summary>
@@ -110,82 +110,121 @@ namespace NLayeredContextMenu
             selectedItems = dte.SelectedItems;
             if (selectedItems.Count > 1)
             {
-                message = $"Can't Support multiple creation yet.";
+                message = "Can't Support multiple creation yet.";
                 VsShellUtilities.ShowMessageBox((IServiceProvider)ServiceProvider, message, title, OLEMSGICON.OLEMSGICON_INFO,
                     OLEMSGBUTTON.OLEMSGBUTTON_OK, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
             }
-            if (selectedItems != null)
+            if (selectedItems == null)
             {
-                foreach (EnvDTE.SelectedItem selectedItem in selectedItems)
+                message = "There isn't any item selected";
+                VsShellUtilities.ShowMessageBox((IServiceProvider)ServiceProvider, message, title, OLEMSGICON.OLEMSGICON_INFO,
+                    OLEMSGBUTTON.OLEMSGBUTTON_OK, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
+                return;
+            }
+            foreach (EnvDTE.SelectedItem selectedItem in selectedItems)
+            {
+                projectItem = selectedItem.ProjectItem as ProjectItem;
+                if (!IsIEntityImplementation(projectItem))
                 {
-                    projectItem = selectedItem.ProjectItem as EnvDTE.ProjectItem;
+                    message = "Object must be Implemented from IEntity in order to generate";
+                    VsShellUtilities.ShowMessageBox((IServiceProvider)ServiceProvider, message, title,
+                        OLEMSGICON.OLEMSGICON_INFO, OLEMSGBUTTON.OLEMSGBUTTON_OK, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
+                    return;
+                }
 
-                    if (projectItem != null)
+                if (projectItem != null)
+                {
+                    foreach (EnvDTE.Project project in dte.Solution.Projects)
                     {
-                        foreach (EnvDTE.Project project in dte.Solution.Projects)
+
+                        if (project.Name.EndsWith("DataAccess") || project.Name.EndsWith("Dal"))
                         {
+                            if (!DoesProjectFolderExists(project.FullName, "Abstract"))
+                                project.ProjectItems.AddFolder("Abstract");
 
-                            if (project.Name.EndsWith("DataAccess") || project.Name.EndsWith("Dal"))
+                            if (!DoesProjectFolderExists(project.FullName, "Concrete\\EntityFramework"))
+                                project.ProjectItems.AddFolder("Concrete\\EntityFramework");
+
+                            foreach (EnvDTE.ProjectItem item in project.ProjectItems)
                             {
-                                if (!DoesProjectFolderExists(project.FullName, "Abstract"))
-                                    project.ProjectItems.AddFolder("Abstract");
-
-                                if (!DoesProjectFolderExists(project.FullName, "Concrete\\EntityFramework"))
-                                    project.ProjectItems.AddFolder("Concrete\\EntityFramework");
-
-                                foreach (EnvDTE.ProjectItem item in project.ProjectItems)
+                                var projectTemplate = solution2.GetProjectItemTemplate("Interface", "CSharp");
+                                var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(projectItem.Name);
+                                if (item.Name == "Abstract")
                                 {
-                                    var projectTemplate = solution2.GetProjectItemTemplate("Interface", "CSharp");
-                                    var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(projectItem.Name);
-                                    if (item.Name == "Abstract")
+                                    CreateDalAbstract(item, projectTemplate, fileNameWithoutExtension, project.Name);
+                                }
+                                if (item.Name == "Concrete")
+                                {
+                                    foreach (ProjectItem concrete in item.ProjectItems)
                                     {
-                                        CreateDalAbstract(item, projectTemplate, fileNameWithoutExtension, project.Name);
-                                    }
-                                    if (item.Name == "Concrete")
-                                    {
-                                        foreach (ProjectItem concrete in item.ProjectItems)
+                                        if (concrete.Name == "EntityFramework")
                                         {
-                                            if (concrete.Name == "EntityFramework")
-                                            {
-                                                CreateDalConcrete(concrete, projectTemplate, fileNameWithoutExtension, project.Name);
-                                            }
+                                            CreateDalConcrete(concrete, projectTemplate, fileNameWithoutExtension, project.Name);
                                         }
                                     }
                                 }
-
                             }
 
-                            if (project.Name.EndsWith("Business") || project.Name.EndsWith("Bll"))
+                        }
+
+                        if (project.Name.EndsWith("Business") || project.Name.EndsWith("Bll"))
+                        {
+                            if (!DoesProjectFolderExists(project.FullName, "Abstract"))
+                                project.ProjectItems.AddFolder("Abstract");
+
+                            if (!DoesProjectFolderExists(project.FullName, "Concrete"))
+                                project.ProjectItems.AddFolder("Concrete");
+
+                            foreach (EnvDTE.ProjectItem item in project.ProjectItems)
                             {
-                                if (!DoesProjectFolderExists(project.FullName, "Abstract"))
-                                    project.ProjectItems.AddFolder("Abstract");
-
-                                if (!DoesProjectFolderExists(project.FullName, "Concrete"))
-                                    project.ProjectItems.AddFolder("Concrete");
-
-                                foreach (EnvDTE.ProjectItem item in project.ProjectItems)
+                                var projectTemplate = solution2.GetProjectItemTemplate("Interface", "CSharp");
+                                var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(projectItem.Name);
+                                if (item.Name == "Abstract")
                                 {
-                                    var projectTemplate = solution2.GetProjectItemTemplate("Interface", "CSharp");
-                                    var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(projectItem.Name);
-                                    if (item.Name == "Abstract")
-                                    {
-                                        CreateBusinessAbstract(item, projectTemplate, fileNameWithoutExtension, project.Name);
-                                    }
-                                    if (item.Name == "Concrete")
-                                    {
-                                        CreateBusinessConcrete(item, projectTemplate, fileNameWithoutExtension, project.Name);
-                                    }
+                                    CreateBusinessAbstract(item, projectTemplate, fileNameWithoutExtension, project.Name);
+                                }
+                                if (item.Name == "Concrete")
+                                {
+                                    CreateBusinessConcrete(item, projectTemplate, fileNameWithoutExtension, project.Name);
                                 }
                             }
+                        }
+                    }
+
+                }
+            }
+        }
+
+        private static bool IsIEntityImplementation(ProjectItem projectItem)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            foreach (CodeElement2 codeElement in projectItem.FileCodeModel.CodeElements)
+            {
+                if (codeElement is CodeNamespace)
+                {
+                    var nspace = codeElement as CodeNamespace;
+
+                    foreach (CodeClass property in nspace.Members)
+                    {
+
+                        if (property is null)
+                            continue;
+
+                        foreach (CodeInterface iface in property.ImplementedInterfaces)
+                        {
+                            if (iface.Name == "IEntity")
+                                return true;
                         }
 
                     }
                 }
             }
+            return false;
         }
 
         private void CreateDalAbstract(ProjectItem item, string projectTemplate, string fileNameWithoutExtension, string projectName)
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
             try
             {
                 var addedItem = item.ProjectItems.AddFromTemplate(projectTemplate,
@@ -206,6 +245,7 @@ namespace NLayeredContextMenu
         }
         private void CreateDalConcrete(ProjectItem item, string projectTemplate, string fileNameWithoutExtension, string projectName)
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
             try
             {
                 var addedItem = item.ProjectItems.AddFromTemplate(projectTemplate, $"Ef{fileNameWithoutExtension}Dal.cs");
@@ -226,6 +266,7 @@ namespace NLayeredContextMenu
 
         private void CreateBusinessAbstract(ProjectItem item, string projectTemplate, string fileNameWithoutExtension, string projectName)
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
             try
             {
                 var addedItem = item.ProjectItems.AddFromTemplate(projectTemplate,
@@ -246,6 +287,7 @@ namespace NLayeredContextMenu
         }
         private void CreateBusinessConcrete(ProjectItem item, string projectTemplate, string fileNameWithoutExtension, string projectName)
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
             try
             {
                 var addedItem = item.ProjectItems.AddFromTemplate(projectTemplate, $"{fileNameWithoutExtension}Manager.cs");
@@ -273,6 +315,8 @@ namespace NLayeredContextMenu
         {
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.AppendLine("using System;");
+            stringBuilder.AppendLine("using Core.DataAccess;");
+            stringBuilder.AppendLine("using Entities.Concrete;");
             stringBuilder.AppendLine("\n");
             stringBuilder.AppendLine($"namespace {projectName}.Abstract");
             stringBuilder.AppendLine("{");
@@ -287,6 +331,9 @@ namespace NLayeredContextMenu
         {
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.AppendLine("using System;");
+            stringBuilder.AppendLine("using System.Linq;");
+            stringBuilder.AppendLine("using Core.DataAccess.EntityFramework;");
+            stringBuilder.AppendLine("using Entities.Concrete;");
             stringBuilder.AppendLine($"using {projectName}.Abstract;");
             stringBuilder.AppendLine("\n");
             stringBuilder.AppendLine($"namespace {projectName}.Concrete.EntityFramework");
@@ -302,7 +349,8 @@ namespace NLayeredContextMenu
         {
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.AppendLine("using System;");
-            stringBuilder.AppendLine("using System.Linq;");
+            stringBuilder.AppendLine("using Entities.Concrete;");
+            stringBuilder.AppendLine("using System.Collections.Generic;");
             stringBuilder.AppendLine("\n");
             stringBuilder.AppendLine($"namespace {projectName}.Abstract");
             stringBuilder.AppendLine("{");
@@ -328,6 +376,9 @@ namespace NLayeredContextMenu
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.AppendLine("using System;");
             stringBuilder.AppendLine("using System.Linq;");
+            stringBuilder.AppendLine("using System.Collections.Generic;");
+            stringBuilder.AppendLine("using Entities.Concrete;");
+            stringBuilder.AppendLine("using DataAccess.Abstract;");
             stringBuilder.AppendLine($"using {projectName}.Abstract;");
             stringBuilder.AppendLine("\n");
             stringBuilder.AppendLine($"namespace {projectName}.Concrete");
