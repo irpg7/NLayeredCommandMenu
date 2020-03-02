@@ -11,6 +11,8 @@ using EnvDTE80;
 using System.IO;
 using System.Text;
 using EnvDTE;
+using NLayeredContextMenu.Models;
+using NLayeredContextMenu.Services;
 
 namespace NLayeredContextMenu
 {
@@ -149,9 +151,17 @@ namespace NLayeredContextMenu
                             {
                                 var projectTemplate = solution2.GetProjectItemTemplate("Interface", "CSharp");
                                 var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(projectItem.Name);
+                                var fileParameters = new CreateFileParameters
+                                {
+                                    ProjectItem = item,
+                                    ProjectTemplate=projectTemplate,
+                                    ProjectName = project.Name,
+                                    FileNameWithoutExtension = fileNameWithoutExtension,
+
+                                };
                                 if (item.Name == "Abstract")
                                 {
-                                    CreateDalAbstract(item, projectTemplate, fileNameWithoutExtension, project.Name);
+                                    DataAccessFileService.CreateDalAbstract(fileParameters);
                                 }
                                 if (item.Name == "Concrete")
                                 {
@@ -159,7 +169,8 @@ namespace NLayeredContextMenu
                                     {
                                         if (concrete.Name == "EntityFramework")
                                         {
-                                            CreateDalConcrete(concrete, projectTemplate, fileNameWithoutExtension, project.Name);
+                                            fileParameters.ProjectItem = concrete;
+                                            DataAccessFileService.CreateDalConcrete(fileParameters);
                                         }
                                     }
                                 }
@@ -179,13 +190,20 @@ namespace NLayeredContextMenu
                             {
                                 var projectTemplate = solution2.GetProjectItemTemplate("Interface", "CSharp");
                                 var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(projectItem.Name);
+                                var fileParameters = new CreateFileParameters
+                                {
+                                    FileNameWithoutExtension = fileNameWithoutExtension,
+                                    ProjectItem = item,
+                                    ProjectName = project.Name,
+                                    ProjectTemplate = projectTemplate
+                                };
                                 if (item.Name == "Abstract")
                                 {
-                                    CreateBusinessAbstract(item, projectTemplate, fileNameWithoutExtension, project.Name);
+                                    CreateBusinessAbstract(fileParameters);
                                 }
                                 if (item.Name == "Concrete")
                                 {
-                                    CreateBusinessConcrete(item, projectTemplate, fileNameWithoutExtension, project.Name);
+                                    CreateBusinessConcrete(fileParameters);
                                 }
                             }
                         }
@@ -222,19 +240,22 @@ namespace NLayeredContextMenu
             return false;
         }
 
-        private void CreateDalAbstract(ProjectItem item, string projectTemplate, string fileNameWithoutExtension, string projectName)
+      
+        
+
+        private void CreateBusinessAbstract(CreateFileParameters fileParameters)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
             try
             {
-                var addedItem = item.ProjectItems.AddFromTemplate(projectTemplate,
-                                                                        $"I{fileNameWithoutExtension}Dal.cs");
+                var addedItem = fileParameters.ProjectItem.ProjectItems.AddFromTemplate(fileParameters.ProjectTemplate,
+                                                                        $"I{fileParameters.FileNameWithoutExtension}Service.cs");
 
                 var addedItemDocument = addedItem.Document;
                 var textDocument = addedItemDocument.Object() as TextDocument;
                 var p = textDocument.StartPoint.CreateEditPoint();
                 p.Delete(textDocument.EndPoint);
-                p.Insert(CreateDalAbstractFileContent(fileNameWithoutExtension, projectName));
+                p.Insert(CreateBusinessAbstractFileContent(fileParameters.FileNameWithoutExtension, fileParameters.ProjectName));
                 p.SmartFormat(textDocument.StartPoint);
                 addedItemDocument.Save();
             }
@@ -243,59 +264,17 @@ namespace NLayeredContextMenu
                 throw;
             }
         }
-        private void CreateDalConcrete(ProjectItem item, string projectTemplate, string fileNameWithoutExtension, string projectName)
+        private void CreateBusinessConcrete(CreateFileParameters fileParameters)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
             try
             {
-                var addedItem = item.ProjectItems.AddFromTemplate(projectTemplate, $"Ef{fileNameWithoutExtension}Dal.cs");
+                var addedItem = fileParameters.ProjectItem.ProjectItems.AddFromTemplate(fileParameters.ProjectTemplate, $"{fileParameters.FileNameWithoutExtension}Manager.cs");
                 var addedItemDocument = addedItem.Document;
                 var textDocument = addedItemDocument.Object() as TextDocument;
                 var p = textDocument.StartPoint.CreateEditPoint();
                 p.Delete(textDocument.EndPoint);
-                p.Insert(CreateDalConcreteFileContent(fileNameWithoutExtension, projectName));
-                p.SmartFormat(textDocument.StartPoint);
-                addedItemDocument.Save();
-            }
-            catch
-            {
-                throw;
-            }
-
-        }
-
-        private void CreateBusinessAbstract(ProjectItem item, string projectTemplate, string fileNameWithoutExtension, string projectName)
-        {
-            ThreadHelper.ThrowIfNotOnUIThread();
-            try
-            {
-                var addedItem = item.ProjectItems.AddFromTemplate(projectTemplate,
-                                                                        $"I{fileNameWithoutExtension}Service.cs");
-
-                var addedItemDocument = addedItem.Document;
-                var textDocument = addedItemDocument.Object() as TextDocument;
-                var p = textDocument.StartPoint.CreateEditPoint();
-                p.Delete(textDocument.EndPoint);
-                p.Insert(CreateBusinessAbstractFileContent(fileNameWithoutExtension, projectName));
-                p.SmartFormat(textDocument.StartPoint);
-                addedItemDocument.Save();
-            }
-            catch
-            {
-                throw;
-            }
-        }
-        private void CreateBusinessConcrete(ProjectItem item, string projectTemplate, string fileNameWithoutExtension, string projectName)
-        {
-            ThreadHelper.ThrowIfNotOnUIThread();
-            try
-            {
-                var addedItem = item.ProjectItems.AddFromTemplate(projectTemplate, $"{fileNameWithoutExtension}Manager.cs");
-                var addedItemDocument = addedItem.Document;
-                var textDocument = addedItemDocument.Object() as TextDocument;
-                var p = textDocument.StartPoint.CreateEditPoint();
-                p.Delete(textDocument.EndPoint);
-                p.Insert(CreateBusinessConcreteFileContent(fileNameWithoutExtension, projectName));
+                p.Insert(CreateBusinessConcreteFileContent(fileParameters.FileNameWithoutExtension, fileParameters.ProjectName));
                 p.SmartFormat(textDocument.StartPoint);
                 addedItemDocument.Save();
             }
@@ -311,39 +290,8 @@ namespace NLayeredContextMenu
 
             return Directory.Exists(Path.Combine(projectPath, folderNameToCheck));
         }
-        private string CreateDalAbstractFileContent(string fileName, string projectName)
-        {
-            StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.AppendLine("using System;");
-            stringBuilder.AppendLine("using Core.DataAccess;");
-            stringBuilder.AppendLine("using Entities.Concrete;");
-            stringBuilder.AppendLine("\n");
-            stringBuilder.AppendLine($"namespace {projectName}.Abstract");
-            stringBuilder.AppendLine("{");
-            stringBuilder.AppendLine($"public interface I{fileName}Dal:IEntityRepository<{fileName}>");
-            stringBuilder.AppendLine("{");
-            stringBuilder.AppendLine("}");
-            stringBuilder.AppendLine("}");
-
-            return stringBuilder.ToString();
-        }
-        private string CreateDalConcreteFileContent(string fileName, string projectName)
-        {
-            StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.AppendLine("using System;");
-            stringBuilder.AppendLine("using System.Linq;");
-            stringBuilder.AppendLine("using Core.DataAccess.EntityFramework;");
-            stringBuilder.AppendLine("using Entities.Concrete;");
-            stringBuilder.AppendLine($"using {projectName}.Abstract;");
-            stringBuilder.AppendLine("\n");
-            stringBuilder.AppendLine($"namespace {projectName}.Concrete.EntityFramework");
-            stringBuilder.AppendLine("{");
-            stringBuilder.AppendLine($"public class Ef{fileName}Dal:EfEntityRepositoryBase<{fileName},context>,I{fileName}Dal");
-            stringBuilder.AppendLine("{");
-            stringBuilder.AppendLine("}");
-            stringBuilder.AppendLine("}");
-            return stringBuilder.ToString();
-        }
+        
+       
 
         private string CreateBusinessAbstractFileContent(string fileName, string projectName)
         {

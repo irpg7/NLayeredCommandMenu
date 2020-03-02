@@ -58,6 +58,7 @@
     <Compile Include="CreateRelatedObjectsPackage.cs" />
     <Compile Include="Models\CreateFileParameters.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Services\DataAccessFileService.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Key.snk" />
