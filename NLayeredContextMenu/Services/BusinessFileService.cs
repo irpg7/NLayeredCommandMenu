@@ -45,7 +45,7 @@ namespace NLayeredContextMenu.Services
 using Entities.Concrete;
 using System.Collections.Generic;
 
-namespace [projectName[.Abstract
+namespace [projectName].Abstract
 {
 public interface I[fileName]Service
 {
