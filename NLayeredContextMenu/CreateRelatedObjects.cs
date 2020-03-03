@@ -13,6 +13,7 @@ using System.Text;
 using EnvDTE;
 using NLayeredContextMenu.Models;
 using NLayeredContextMenu.Services;
+using NLayeredContextMenu.Constants;
 
 namespace NLayeredContextMenu
 {
@@ -72,25 +73,25 @@ namespace NLayeredContextMenu
         private void Execute(object sender, EventArgs e)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
-            string message = string.Format(CultureInfo.CurrentCulture, "Inside {0}.MenuItemCallback()", this.GetType().FullName);
-            string title = "CreateRelatedObjects";
-            EnvDTE.DTE dte;
-            EnvDTE.SelectedItems selectedItems;
-            EnvDTE.ProjectItem projectItem;
-            EnvDTE80.Solution2 solution2;
+            DTE dte;
+            SelectedItems selectedItems;
+            ProjectItem projectItem;
+            Solution2 solution2;
+            var dialogFactory = SyncServiceProvider.GetService(typeof(SVsThreadedWaitDialogFactory)) as IVsThreadedWaitDialogFactory;
+            IVsThreadedWaitDialog2 dialog = null;
+            
+
             dte = SyncServiceProvider.GetService(typeof(EnvDTE.DTE)) as EnvDTE.DTE ?? throw new ArgumentNullException();
             solution2 = (Solution2)dte.Solution;
             selectedItems = dte.SelectedItems;
             if (selectedItems.Count > 1)
             {
-                message = "Can't Support multiple creation yet.";
-                VsShellUtilities.ShowMessageBox((IServiceProvider)ServiceProvider, message, title, OLEMSGICON.OLEMSGICON_INFO,
+                VsShellUtilities.ShowMessageBox((IServiceProvider)ServiceProvider, Messages.CannotSupportMultipleCreation, Messages.ApplicationName, OLEMSGICON.OLEMSGICON_INFO,
                     OLEMSGBUTTON.OLEMSGBUTTON_OK, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
             }
             if (selectedItems == null)
             {
-                message = "There isn't any item selected";
-                VsShellUtilities.ShowMessageBox((IServiceProvider)ServiceProvider, message, title, OLEMSGICON.OLEMSGICON_INFO,
+                VsShellUtilities.ShowMessageBox((IServiceProvider)ServiceProvider, Messages.NoItemSelected, Messages.ApplicationName, OLEMSGICON.OLEMSGICON_INFO,
                     OLEMSGBUTTON.OLEMSGBUTTON_OK, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
                 return;
             }
@@ -99,15 +100,21 @@ namespace NLayeredContextMenu
                 projectItem = selectedItem.ProjectItem as ProjectItem;
                 if (!IsIEntityImplementation(projectItem))
                 {
-                    message = "Object must be Implemented from IEntity in order to generate";
-                    VsShellUtilities.ShowMessageBox((IServiceProvider)ServiceProvider, message, title,
+                    VsShellUtilities.ShowMessageBox((IServiceProvider)ServiceProvider, Messages.MustBeImplementedFromIEntity, Messages.ApplicationName,
                         OLEMSGICON.OLEMSGICON_INFO, OLEMSGBUTTON.OLEMSGBUTTON_OK, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
                     return;
                 }
 
                 if (projectItem != null)
                 {
-                    foreach (EnvDTE.Project project in dte.Solution.Projects)
+                    if (dialogFactory != null)
+                        dialogFactory.CreateInstance(out dialog);
+
+                   
+                    if (dialog != null)
+                        dialog.StartWaitDialog(Messages.PleaseWait, Messages.ExecutingRequestedAction, "", null, "", 0, false, true);
+
+                    foreach (Project project in dte.Solution.Projects)
                     {
 
                         if (project.Name.EndsWith("DataAccess") || project.Name.EndsWith("Dal"))
@@ -118,7 +125,7 @@ namespace NLayeredContextMenu
                             if (!DoesProjectFolderExists(project.FullName, "Concrete\\EntityFramework"))
                                 project.ProjectItems.AddFolder("Concrete\\EntityFramework");
 
-                            foreach (EnvDTE.ProjectItem item in project.ProjectItems)
+                            foreach (ProjectItem item in project.ProjectItems)
                             {
                                 var projectTemplate = solution2.GetProjectItemTemplate("Interface", "CSharp");
                                 var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(projectItem.Name);
@@ -170,16 +177,19 @@ namespace NLayeredContextMenu
                                 };
                                 if (item.Name == "Abstract")
                                 {
+                                
                                     BusinessFileService.CreateBusinessAbstract(fileParameters);
                                 }
                                 if (item.Name == "Concrete")
                                 {
+                                 
                                     BusinessFileService.CreateBusinessConcrete(fileParameters);
                                 }
                             }
                         }
                     }
 
+                    dialog.EndWaitDialog();
                 }
             }
         }

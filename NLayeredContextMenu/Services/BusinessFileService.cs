@@ -105,7 +105,7 @@ namespace NLayeredContextMenu.Services
 
             stringBuilder.AppendLine($"public {fileName} Get(int id)");
             stringBuilder.AppendLine("{");
-            stringBuilder.AppendLine($"return _{camelCasedFileName}Dal.Get(id);");
+            stringBuilder.AppendLine($"return _{camelCasedFileName}Dal.Get(x=>x.Id == id);");
             stringBuilder.AppendLine("}");
 
             stringBuilder.AppendLine($"public List<{fileName}> GetList()");
@@ -125,7 +125,8 @@ namespace NLayeredContextMenu.Services
 
             stringBuilder.AppendLine($"public void Delete(int id)");
             stringBuilder.AppendLine("{");
-            stringBuilder.AppendLine($"_{camelCasedFileName}Dal.Delete(id);");
+            stringBuilder.AppendLine($"var entity = Get(id);");
+            stringBuilder.AppendLine($"_{camelCasedFileName}Dal.Delete(entity);");
             stringBuilder.AppendLine("}");
 
             stringBuilder.AppendLine("}");
