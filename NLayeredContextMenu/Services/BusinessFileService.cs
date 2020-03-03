@@ -36,29 +36,27 @@ namespace NLayeredContextMenu.Services
         }
         private static string CreateBusinessAbstractFileContent(string fileName, string projectName)
         {
-            StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.AppendLine("using System;");
-            stringBuilder.AppendLine("using Entities.Concrete;");
-            stringBuilder.AppendLine("using System.Collections.Generic;");
-            stringBuilder.AppendLine("\n");
-            stringBuilder.AppendLine($"namespace {projectName}.Abstract");
-            stringBuilder.AppendLine("{");
-            stringBuilder.AppendLine($"public interface I{fileName}Service");
-            stringBuilder.AppendLine("{");
-
-            stringBuilder.AppendLine($"{fileName} Get(int id);");
-            stringBuilder.AppendLine($"List<{fileName}> GetList();");
-            stringBuilder.AppendLine($"void Add({fileName} entity);");
-            stringBuilder.AppendLine($"void Update({fileName} entity);");
-            stringBuilder.AppendLine($"void Delete(int id);");
-
-            stringBuilder.AppendLine("}");
-
-            stringBuilder.AppendLine("}");
-
-            return stringBuilder.ToString();
+            return _fmtClassFile
+                    .Replace("[projectName]", projectName)
+                    .Replace("[fileName]", fileName);
 
         }
+        private const string _fmtClassFile = @"
+using Entities.Concrete;
+using System.Collections.Generic;
+
+namespace [projectName[.Abstract
+{
+public interface I[fileName]Service
+{
+[fileName] Get(int id);
+List<[fileName]> GetList();
+void Add([fileName] entity);
+void Update([fileName] entity);
+void Delete(int id);
+}
+}
+";
         #endregion
 
         #region Concrete
@@ -85,56 +83,58 @@ namespace NLayeredContextMenu.Services
         private static string CreateBusinessConcreteFileContent(string fileName, string projectName)
         {
             string camelCasedFileName = char.ToLowerInvariant(fileName[0]) + fileName.Substring(1);
-            StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.AppendLine("using System;");
-            stringBuilder.AppendLine("using System.Linq;");
-            stringBuilder.AppendLine("using System.Collections.Generic;");
-            stringBuilder.AppendLine("using Entities.Concrete;");
-            stringBuilder.AppendLine("using DataAccess.Abstract;");
-            stringBuilder.AppendLine($"using {projectName}.Abstract;");
-            stringBuilder.AppendLine("\n");
-            stringBuilder.AppendLine($"namespace {projectName}.Concrete");
-            stringBuilder.AppendLine("{");
-            stringBuilder.AppendLine($"public class {fileName}Manager:I{fileName}Service");
-            stringBuilder.AppendLine("{");
-            stringBuilder.AppendLine($"private I{fileName}Dal _{camelCasedFileName}Dal;");
-            stringBuilder.AppendLine($"public {fileName}Manager(I{fileName}Dal {camelCasedFileName}Dal)");
-            stringBuilder.AppendLine("{");
-            stringBuilder.AppendLine($"_{camelCasedFileName}Dal={camelCasedFileName}Dal;");
-            stringBuilder.AppendLine("}");
-
-            stringBuilder.AppendLine($"public {fileName} Get(int id)");
-            stringBuilder.AppendLine("{");
-            stringBuilder.AppendLine($"return _{camelCasedFileName}Dal.Get(x=>x.Id == id);");
-            stringBuilder.AppendLine("}");
-
-            stringBuilder.AppendLine($"public List<{fileName}> GetList()");
-            stringBuilder.AppendLine("{");
-            stringBuilder.AppendLine($"return _{camelCasedFileName}Dal.GetList();");
-            stringBuilder.AppendLine("}");
-
-            stringBuilder.AppendLine($"public void Add({fileName} entity)");
-            stringBuilder.AppendLine("{");
-            stringBuilder.AppendLine($"_{camelCasedFileName}Dal.Add(entity);");
-            stringBuilder.AppendLine("}");
-
-            stringBuilder.AppendLine($"public void Update({fileName} entity)");
-            stringBuilder.AppendLine("{");
-            stringBuilder.AppendLine($"_{camelCasedFileName}Dal.Update(entity);");
-            stringBuilder.AppendLine("}");
-
-            stringBuilder.AppendLine($"public void Delete(int id)");
-            stringBuilder.AppendLine("{");
-            stringBuilder.AppendLine($"var entity = Get(id);");
-            stringBuilder.AppendLine($"_{camelCasedFileName}Dal.Delete(entity);");
-            stringBuilder.AppendLine("}");
-
-            stringBuilder.AppendLine("}");
-
-            stringBuilder.AppendLine("}");
-
-            return stringBuilder.ToString();
+            return _fmtConcreteFile
+                  .Replace("[projectName]", projectName)
+                  .Replace("[fileName]", fileName)
+                  .Replace("[camelCasedFileName]", camelCasedFileName);
         }
+        private const string _fmtConcreteFile = @"
+           using System;
+           using System.Linq;
+           using System.Collections.Generic;
+           using Entities.Concrete;
+           using DataAccess.Abstract;
+            using [projectName].Abstract;
+          
+            namespace [projectName].Concrete
+           {
+            public class [fileName]Manager:I[fileName]Service
+           {
+            private I[fileName]Dal _[camelCasedFileName]Dal;
+            public [fileName]Manager(I[fileName]Dal [camelCasedFileName]Dal)
+           {
+            _[camelCasedFileName]Dal=[camelCasedFileName]Dal;
+           }
+
+            public [fileName] Get(int id)
+           {
+            return _[camelCasedFileName]Dal.Get(x=>x.Id == id);
+           }
+
+            public List<[fileName]> GetList()
+           {
+            return _[camelCasedFileName]Dal.GetList();
+           }
+
+            public void Add([fileName] entity)
+           {
+            _[camelCasedFileName]Dal.Add(entity);
+           }
+
+            public void Update([fileName] entity)
+           {
+            _[camelCasedFileName]Dal.Update(entity);
+           }
+
+            public void Delete(int id)
+           {
+            var entity = Get(id);
+            _[camelCasedFileName]Dal.Delete(entity);
+           }
+
+           }
+
+           }";
         #endregion
     }
 }

@@ -36,20 +36,21 @@ namespace NLayeredContextMenu.Services
 
         private static string CreateDalAbstractFileContent(string fileName, string projectName)
         {
-            StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.AppendLine("using System;");
-            stringBuilder.AppendLine("using Core.DataAccess;");
-            stringBuilder.AppendLine("using Entities.Concrete;");
-            stringBuilder.AppendLine("\n");
-            stringBuilder.AppendLine($"namespace {projectName}.Abstract");
-            stringBuilder.AppendLine("{");
-            stringBuilder.AppendLine($"public interface I{fileName}Dal:IEntityRepository<{fileName}>");
-            stringBuilder.AppendLine("{");
-            stringBuilder.AppendLine("}");
-            stringBuilder.AppendLine("}");
-
-            return stringBuilder.ToString();
+            return _fmtInterafaceFile
+                  .Replace("[projectName]", projectName)
+                  .Replace("[fileName]", fileName);
         }
+        private const string _fmtInterafaceFile = @"
+           using System;
+           using Core.DataAccess;
+           using Entities.Concrete;         
+           namespace [projectName].Abstract
+           {
+           public interface I[fileName]Dal:IEntityRepository<[fileName]>
+           {
+           }
+           }
+";
         #endregion
 
         #region Concrete
@@ -75,21 +76,24 @@ namespace NLayeredContextMenu.Services
         }
         private static string CreateDalConcreteFileContent(string fileName, string projectName)
         {
-            StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.AppendLine("using System;");
-            stringBuilder.AppendLine("using System.Linq;");
-            stringBuilder.AppendLine("using Core.DataAccess.EntityFramework;");
-            stringBuilder.AppendLine("using Entities.Concrete;");
-            stringBuilder.AppendLine($"using {projectName}.Abstract;");
-            stringBuilder.AppendLine("\n");
-            stringBuilder.AppendLine($"namespace {projectName}.Concrete.EntityFramework");
-            stringBuilder.AppendLine("{");
-            stringBuilder.AppendLine($"public class Ef{fileName}Dal:EfEntityRepositoryBase<{fileName},context>,I{fileName}Dal");
-            stringBuilder.AppendLine("{");
-            stringBuilder.AppendLine("}");
-            stringBuilder.AppendLine("}");
-            return stringBuilder.ToString();
+            return _fmtClassFile
+                  .Replace("[projectName]", projectName)
+                  .Replace("[fileName]", fileName);
         }
+        private const string _fmtClassFile = @"
+            using System;
+            using System.Linq;
+            using Core.DataAccess.EntityFramework;
+            using Entities.Concrete;
+            using [projectName].Abstract;
+            
+            namespace [projectName].Concrete.EntityFramework
+            {
+            public class Ef[fileName]Dal:EfEntityRepositoryBase<[fileName],context>,I[fileName]Dal
+            {
+            }
+            }
+";
         #endregion
     }
 }
