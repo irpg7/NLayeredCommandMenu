@@ -13,7 +13,7 @@
       <Button guid="guidVSPackageCommandFileContextMenuCmdSet" id="CreateRelatedObjectsId" type="Button">
         <Icon guid="guidImages" id="bmpPic1" />
         <Strings>
-          <ButtonText>Generate Dal And Bll For This Entity</ButtonText>
+          <ButtonText>Generate DataAccess And Business For Entity</ButtonText>
         </Strings>
       </Button>
       

@@ -81,14 +81,10 @@ namespace NLayeredContextMenu
             IVsThreadedWaitDialog2 dialog = null;
             
 
-            dte = SyncServiceProvider.GetService(typeof(EnvDTE.DTE)) as EnvDTE.DTE ?? throw new ArgumentNullException();
+            dte = SyncServiceProvider.GetService(typeof(DTE)) as DTE ?? throw new ArgumentNullException();
             solution2 = (Solution2)dte.Solution;
             selectedItems = dte.SelectedItems;
-            if (selectedItems.Count > 1)
-            {
-                VsShellUtilities.ShowMessageBox((IServiceProvider)ServiceProvider, Messages.CannotSupportMultipleCreation, Messages.ApplicationName, OLEMSGICON.OLEMSGICON_INFO,
-                    OLEMSGBUTTON.OLEMSGBUTTON_OK, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
-            }
+         
             if (selectedItems == null)
             {
                 VsShellUtilities.ShowMessageBox((IServiceProvider)ServiceProvider, Messages.NoItemSelected, Messages.ApplicationName, OLEMSGICON.OLEMSGICON_INFO,
