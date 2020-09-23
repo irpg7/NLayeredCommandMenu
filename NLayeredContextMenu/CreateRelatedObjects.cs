@@ -91,9 +91,9 @@ namespace NLayeredContextMenu
                     OLEMSGBUTTON.OLEMSGBUTTON_OK, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
                 return;
             }
-            foreach (EnvDTE.SelectedItem selectedItem in selectedItems)
+            foreach (SelectedItem selectedItem in selectedItems)
             {
-                projectItem = selectedItem.ProjectItem as ProjectItem;
+                projectItem = selectedItem.ProjectItem;
                 if (!IsIEntityImplementation(projectItem))
                 {
                     VsShellUtilities.ShowMessageBox((IServiceProvider)ServiceProvider, Messages.MustBeImplementedFromIEntity, Messages.ApplicationName,
@@ -180,6 +180,13 @@ namespace NLayeredContextMenu
                                 {
                                  
                                     BusinessFileService.CreateBusinessConcrete(fileParameters);
+                                }
+                                if(item.Name == "DependencyResolvers")
+                                {
+                                    foreach (ProjectItem iocFolder in item.ProjectItems)
+                                    {
+                                        BusinessFileService.RegisterAddedFilesToIoc(iocFolder,fileParameters.FileNameWithoutExtension);
+                                    }
                                 }
                             }
                         }

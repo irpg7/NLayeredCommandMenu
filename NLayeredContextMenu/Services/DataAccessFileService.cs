@@ -64,9 +64,10 @@ namespace NLayeredContextMenu.Services
                 var textDocument = addedItemDocument.Object() as TextDocument;
                 var p = textDocument.StartPoint.CreateEditPoint();
                 p.Delete(textDocument.EndPoint);
-                p.Insert(CreateDalConcreteFileContent(fileParameters.FileNameWithoutExtension, fileParameters.ProjectName));
+                p.Insert(CreateDalConcreteFileContent(fileParameters.FileNameWithoutExtension, fileParameters.ProjectName, GetDbContext(fileParameters.ProjectItem)));
                 p.SmartFormat(textDocument.StartPoint);
                 addedItemDocument.Save();
+               // AddDbSetToContext(fileParameters.ProjectItem);
             }
             catch
             {
@@ -74,11 +75,12 @@ namespace NLayeredContextMenu.Services
             }
 
         }
-        private static string CreateDalConcreteFileContent(string fileName, string projectName)
+        private static string CreateDalConcreteFileContent(string fileName, string projectName, string dbContextName)
         {
             return _fmtClassFile
                   .Replace("[projectName]", projectName)
-                  .Replace("[fileName]", fileName);
+                  .Replace("[fileName]", fileName)
+                  .Replace("[DbContextName]", dbContextName);
         }
         private const string _fmtClassFile = @"
             using System;
@@ -86,14 +88,62 @@ namespace NLayeredContextMenu.Services
             using Core.DataAccess.EntityFramework;
             using Entities.Concrete;
             using [projectName].Abstract;
+            using DataAccess.Concrete.EntityFramework.Contexts;
             
             namespace [projectName].Concrete.EntityFramework
             {
-            public class Ef[fileName]Dal:EfEntityRepositoryBase<[fileName],context>,I[fileName]Dal
+            public class Ef[fileName]Dal:EfEntityRepositoryBase<[fileName],[DbContextName]>,I[fileName]Dal
             {
             }
             }
-";
+        ";
+        private static string GetDbContext(ProjectItem projectItem)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            foreach (ProjectItem item in projectItem.ProjectItems)
+            {
+                if (item.Name == "Contexts")
+                {
+                    if (item.ProjectItems.Count > 1)
+                    {
+                        return "MultiContextNotSupported";
+                    }
+                    return item.ProjectItems.Cast<ProjectItem>().FirstOrDefault().Name.Replace(".cs", "");
+                }
+            }
+            return "";
+        }
+        private static void AddDbSetToContext(ProjectItem projectItem)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            
+            var contextProjectItem = projectItem.ProjectItems.Cast<ProjectItem>()
+                .FirstOrDefault(x => x.Name == "Contexts").ProjectItems.Cast<ProjectItem>()
+                .FirstOrDefault();
+            foreach (CodeElement codeElement in contextProjectItem.FileCodeModel.CodeElements)
+            {
+                if (codeElement is CodeNamespace)
+                {
+                    var nspace = codeElement as CodeNamespace;
+                    foreach (CodeClass classMember in nspace.Members)
+                    {
+                        if (classMember is null)
+                            continue;
+
+                        foreach (CodeProperty property in classMember.Members)
+                        {
+                            var infoLocation = property.EndPoint;
+                        }
+                    }
+                }
+            }
+
+
+
+
+
+        }
         #endregion
     }
 }

@@ -1,9 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
     <Metadata>
-        <Identity Id="NLayeredContextMenu.89dcb2b5-0ad6-4c9e-80d4-9226835c8c81" Version="1.0" Language="en-US" Publisher="halil ibrahim duymaz" />
+        <Identity Id="NLayeredContextMenu.89dcb2b5-0ad6-4c9e-80d4-9226835c8c81" Version="1.0" Language="en-US" Publisher="Halil İbrahim Duymaz" />
         <DisplayName>NLayeredContextMenu</DisplayName>
-        <Description>Empty VSIX Project.</Description>
+        <Description xml:space="preserve">DataAccess And Business Generator for N Layered Architecture</Description>
     </Metadata>
     <Installation>
         <InstallationTarget Version="[15.0,17.0)" Id="Microsoft.VisualStudio.Pro" />

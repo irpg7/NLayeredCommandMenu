@@ -3,6 +3,7 @@ using Microsoft.VisualStudio.Shell;
 using NLayeredContextMenu.Models;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -42,20 +43,22 @@ namespace NLayeredContextMenu.Services
 
         }
         private const string _fmtClassFile = @"
-using Entities.Concrete;
-using System.Collections.Generic;
-
-namespace [projectName].Abstract
-{
-public interface I[fileName]Service
-{
-[fileName] Get(int id);
-List<[fileName]> GetList();
-void Add([fileName] entity);
-void Update([fileName] entity);
-void Delete(int id);
-}
-}
+            using Entities.Concrete;
+            using System.Collections.Generic;
+            using Core.Utilities.Results;
+            
+            
+            namespace [projectName].Abstract
+            {
+                public interface I[fileName]Service
+                {
+                    IDataResult<[fileName]> Get(int id);
+                    IDataResult<List<[fileName]>> GetList();
+                    IResult Add([fileName] entity);
+                    IResult Update([fileName] entity);
+                    IResult Delete(int id);
+                }
+            }
 ";
         #endregion
 
@@ -94,7 +97,9 @@ void Delete(int id);
            using System.Collections.Generic;
            using Entities.Concrete;
            using DataAccess.Abstract;
-            using [projectName].Abstract;
+           using [projectName].Abstract;
+           using Core.Utilities.Results;
+           using Business.Constants;
           
             namespace [projectName].Concrete
            {
@@ -106,35 +111,83 @@ void Delete(int id);
             _[camelCasedFileName]Dal=[camelCasedFileName]Dal;
            }
 
-            public [fileName] Get(int id)
+            public IDataResult<[fileName]> Get(int id)
            {
-            return _[camelCasedFileName]Dal.Get(x=>x.Id == id);
+            return new SuccessDataResult<[fileName]>(_[camelCasedFileName]Dal.Get(x=>x.Id == id));
            }
 
-            public List<[fileName]> GetList()
+            public IDataResult<List<[fileName]>> GetList()
            {
-            return _[camelCasedFileName]Dal.GetList();
+            return new SuccessDataResult<List<[fileName]>>(_[camelCasedFileName]Dal.GetList());
            }
 
-            public void Add([fileName] entity)
+            public IResult Add([fileName] entity)
            {
-            _[camelCasedFileName]Dal.Add(entity);
+              _[camelCasedFileName]Dal.Add(entity);
+              return new SuccessResult(Messages.[fileName]Added);
            }
 
-            public void Update([fileName] entity)
+            public IResult Update([fileName] entity)
            {
-            _[camelCasedFileName]Dal.Update(entity);
+              _[camelCasedFileName]Dal.Update(entity);
+              return new SuccessResult(Messages.[fileName]Updated);
            }
 
-            public void Delete(int id)
+            public IResult Delete(int id)
            {
-            var entity = Get(id);
-            _[camelCasedFileName]Dal.Delete(entity);
+             var entity = Get(id).Data;
+             _[camelCasedFileName]Dal.Delete(entity);
+             return new SuccessResult(Messages.[fileName]Deleted);
            }
 
            }
 
            }";
+        #endregion
+
+
+        #region DependencyResolvers
+        public static void RegisterAddedFilesToIoc(ProjectItem iocFolder,string entityName)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            if (iocFolder.Name.ToLowerInvariant() == "autofac")
+            {
+                foreach (ProjectItem module in iocFolder.ProjectItems)
+                {
+                    module.Open();
+                    var codeDocument = module.Document;
+                    var textDocument = codeDocument.Object() as TextDocument;
+                    var lines = textDocument.CreateEditPoint().GetLines(textDocument.StartPoint.Line, textDocument.EndPoint.Line + 1);
+                    var valueToSearch = "(ContainerBuilder builder)\r\n        {\r\n";
+                    lines = lines.Insert(lines.IndexOf(valueToSearch) + valueToSearch.Length, $"builder.RegisterType<{entityName}Manager>().As<I{entityName}Service>().SingleInstance();\r\n");
+                    lines = lines.Insert(lines.IndexOf(valueToSearch) + valueToSearch.Length, $"builder.RegisterType<Ef{entityName}Dal>().As<I{entityName}Dal>().SingleInstance();\r\n");
+                    var editedDocument = textDocument.CreateEditPoint();
+                    editedDocument.Delete(textDocument.EndPoint);
+                    editedDocument.Insert(lines);
+                    editedDocument.SmartFormat(textDocument.StartPoint);
+                    codeDocument.Save();
+                }
+            }
+            else if (iocFolder.Name.ToLowerInvariant() == "microsoft")
+            {
+                foreach (ProjectItem module in iocFolder.ProjectItems)
+                {
+                    module.Open();
+                    var codeDocument = module.Document;
+                    var textDocument = codeDocument.Object() as TextDocument;
+                    var lines = textDocument.CreateEditPoint().GetLines(textDocument.StartPoint.Line, textDocument.EndPoint.Line + 1);
+                    var valueToSearch = "(IServiceCollection services)\r\n        {\r\n";
+                    lines = lines.Insert(lines.IndexOf(valueToSearch) + valueToSearch.Length, $"services.AddSingleton<I{entityName}Service,{entityName}Manager>();\r\n");
+                    lines = lines.Insert(lines.IndexOf(valueToSearch) + valueToSearch.Length, $"services.AddSingleton<I{entityName}Dal,Ef{entityName}Dal>();\r\n");
+                    var editedDocument = textDocument.CreateEditPoint();
+                    editedDocument.Delete(textDocument.EndPoint);
+                    editedDocument.Insert(lines);
+                    editedDocument.SmartFormat(textDocument.StartPoint);
+                    codeDocument.Save();
+                }
+            }
+        }
         #endregion
     }
 }
