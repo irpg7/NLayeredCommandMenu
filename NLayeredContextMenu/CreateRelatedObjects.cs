@@ -230,6 +230,53 @@ namespace NLayeredContextMenu
 
             return Directory.Exists(Path.Combine(projectPath, folderNameToCheck));
         }
+        /*
+        private void AddDbSetForGeneratedFile(ProjectItem selectedItem, ProjectItem dbContext)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
 
+            foreach (CodeElement codeElement in dbContext.FileCodeModel.CodeElements)
+            {
+                if (codeElement is CodeNamespace)
+                {
+                    var nspace = codeElement as CodeNamespace;
+
+                    foreach (CodeClass codeClass in nspace.Members)
+                    {
+                        if (codeClass is null)
+                            continue;
+
+                        var selectedItemType = selectedItem.Name.Replace(".cs", "");
+                        //var pluralizedName = pluralizer.Pluralize(selectedItemType);
+
+                        //TODO: Add Pluralized Entity name
+                        var codeDocument = codeClass.ProjectItem.Open().Document;
+                        var textCodeDocument = codeDocument.Object() as TextDocument;
+                        var edited = textCodeDocument.CreateEditPoint(codeClass.GetEndPoint(vsCMPart.vsCMPartBody));
+                        edited.Insert($"public DbSet<{selectedItemType}> {selectedItemType}" + "{ get; set; }");
+                        edited.SmartFormat(textCodeDocument.StartPoint);
+                        codeDocument.Save();
+                    }
+                }
+            }
+        }
+
+        private static string GetDbContext(ProjectItem projectItem)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            foreach (ProjectItem item in projectItem.ProjectItems)
+            {
+                if (item.Name == "Contexts")
+                {
+                    if (item.ProjectItems.Count > 1)
+                    {
+                        return "MultiContextNotSupported";
+                    }
+                    return item.ProjectItems.Cast<ProjectItem>().FirstOrDefault().Name.Replace(".cs", "");
+                }
+            }
+            return "";
+        }*/
     }
 }
