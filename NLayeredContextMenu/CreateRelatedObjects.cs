@@ -14,6 +14,7 @@ using EnvDTE;
 using NLayeredContextMenu.Models;
 using NLayeredContextMenu.Services;
 using NLayeredContextMenu.Constants;
+using NLayeredContextMenu.Helpers;
 
 namespace NLayeredContextMenu
 {
@@ -22,11 +23,11 @@ namespace NLayeredContextMenu
     /// </summary>
     internal sealed class CreateRelatedObjects
     {
-       
+
         public const int CommandId = 0x0100;
         public static readonly Guid CommandSet = new Guid("d1103015-8d0f-4e7a-be44-465e8893d23e");
         private readonly AsyncPackage package;
-      
+
         private CreateRelatedObjects(AsyncPackage package, OleMenuCommandService commandService)
         {
             this.package = package ?? throw new ArgumentNullException(nameof(package));
@@ -43,7 +44,7 @@ namespace NLayeredContextMenu
             private set;
         }
 
-      
+
         private Microsoft.VisualStudio.Shell.IAsyncServiceProvider ServiceProvider
         {
             get
@@ -58,7 +59,7 @@ namespace NLayeredContextMenu
                 return package;
             }
         }
-   
+
         public static async Task InitializeAsync(AsyncPackage package)
         {
             // Switch to the main thread - the call to AddCommand in CreateRelatedObjects's constructor requires
@@ -69,127 +70,41 @@ namespace NLayeredContextMenu
             Instance = new CreateRelatedObjects(package, commandService);
         }
 
-       
+
         private void Execute(object sender, EventArgs e)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
-            DTE dte;
-            SelectedItems selectedItems;
+            DTE dte = SyncServiceProvider.GetService(typeof(DTE)) as DTE ?? throw new ArgumentNullException();
+            SelectedItems selectedItems = dte.SelectedItems;
             ProjectItem projectItem;
-            Solution2 solution2;
+            Solution2 solution2 = (Solution2)dte.Solution;
             var dialogFactory = SyncServiceProvider.GetService(typeof(SVsThreadedWaitDialogFactory)) as IVsThreadedWaitDialogFactory;
-            IVsThreadedWaitDialog2 dialog = null;
-            
 
-            dte = SyncServiceProvider.GetService(typeof(DTE)) as DTE ?? throw new ArgumentNullException();
-            solution2 = (Solution2)dte.Solution;
-            selectedItems = dte.SelectedItems;
-         
+
             if (selectedItems == null)
             {
-                VsShellUtilities.ShowMessageBox((IServiceProvider)ServiceProvider, Messages.NoItemSelected, Messages.ApplicationName, OLEMSGICON.OLEMSGICON_INFO,
-                    OLEMSGBUTTON.OLEMSGBUTTON_OK, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
+                CommonHelpers.ShowMessageBox((IServiceProvider)ServiceProvider, Messages.NoItemSelected, Messages.ApplicationName);
                 return;
             }
             foreach (SelectedItem selectedItem in selectedItems)
             {
                 projectItem = selectedItem.ProjectItem;
-                if (!IsIEntityImplementation(projectItem))
+                if (!CommonHelpers.IsIEntityImplementation(projectItem))
                 {
-                    VsShellUtilities.ShowMessageBox((IServiceProvider)ServiceProvider, Messages.MustBeImplementedFromIEntity, Messages.ApplicationName,
-                        OLEMSGICON.OLEMSGICON_INFO, OLEMSGBUTTON.OLEMSGBUTTON_OK, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
+                    CommonHelpers.ShowMessageBox((IServiceProvider)ServiceProvider, Messages.MustBeImplementedFromIEntity, Messages.ApplicationName);
                     return;
                 }
 
                 if (projectItem != null)
                 {
-                    if (dialogFactory != null)
-                        dialogFactory.CreateInstance(out dialog);
 
-                   
-                    if (dialog != null)
-                        dialog.StartWaitDialog(Messages.PleaseWait, Messages.ExecutingRequestedAction, "", null, "", 0, false, true);
+                    var dialog = CommonHelpers.ShowWaitDialog(dialogFactory);
 
                     foreach (Project project in dte.Solution.Projects)
                     {
+                        GenerateDataAccess(projectItem, solution2, project);
 
-                        if (project.Name.EndsWith("DataAccess") || project.Name.EndsWith("Dal"))
-                        {
-                            if (!DoesProjectFolderExists(project.FullName, "Abstract"))
-                                project.ProjectItems.AddFolder("Abstract");
-
-                            if (!DoesProjectFolderExists(project.FullName, "Concrete\\EntityFramework"))
-                                project.ProjectItems.AddFolder("Concrete\\EntityFramework");
-
-                            foreach (ProjectItem item in project.ProjectItems)
-                            {
-                                var projectTemplate = solution2.GetProjectItemTemplate("Interface", "CSharp");
-                                var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(projectItem.Name);
-                                var fileParameters = new CreateFileParameters
-                                {
-                                    ProjectItem = item,
-                                    ProjectTemplate = projectTemplate,
-                                    ProjectName = project.Name,
-                                    FileNameWithoutExtension = fileNameWithoutExtension,
-
-                                };
-                                if (item.Name == "Abstract")
-                                {
-                                    DataAccessFileService.CreateDalAbstract(fileParameters);
-                                }
-                                if (item.Name == "Concrete")
-                                {
-                                    foreach (ProjectItem concrete in item.ProjectItems)
-                                    {
-                                        if (concrete.Name == "EntityFramework")
-                                        {
-                                            fileParameters.ProjectItem = concrete;
-                                            DataAccessFileService.CreateDalConcrete(fileParameters);
-                                        }
-                                    }
-                                }
-                            }
-
-                        }
-
-                        if (project.Name.EndsWith("Business") || project.Name.EndsWith("Bll"))
-                        {
-                            if (!DoesProjectFolderExists(project.FullName, "Abstract"))
-                                project.ProjectItems.AddFolder("Abstract");
-
-                            if (!DoesProjectFolderExists(project.FullName, "Concrete"))
-                                project.ProjectItems.AddFolder("Concrete");
-
-                            foreach (EnvDTE.ProjectItem item in project.ProjectItems)
-                            {
-                                var projectTemplate = solution2.GetProjectItemTemplate("Interface", "CSharp");
-                                var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(projectItem.Name);
-                                var fileParameters = new CreateFileParameters
-                                {
-                                    FileNameWithoutExtension = fileNameWithoutExtension,
-                                    ProjectItem = item,
-                                    ProjectName = project.Name,
-                                    ProjectTemplate = projectTemplate
-                                };
-                                if (item.Name == "Abstract")
-                                {
-                                
-                                    BusinessFileService.CreateBusinessAbstract(fileParameters);
-                                }
-                                if (item.Name == "Concrete")
-                                {
-                                 
-                                    BusinessFileService.CreateBusinessConcrete(fileParameters);
-                                }
-                                if(item.Name == "DependencyResolvers")
-                                {
-                                    foreach (ProjectItem iocFolder in item.ProjectItems)
-                                    {
-                                        BusinessFileService.RegisterAddedFilesToIoc(iocFolder,fileParameters.FileNameWithoutExtension);
-                                    }
-                                }
-                            }
-                        }
+                        GenerateBusiness(projectItem, solution2, project);
                     }
 
                     dialog.EndWaitDialog();
@@ -197,86 +112,81 @@ namespace NLayeredContextMenu
             }
         }
 
-        private static bool IsIEntityImplementation(ProjectItem projectItem)
+        private void GenerateBusiness(ProjectItem projectItem, Solution2 solution2, Project project)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
-            foreach (CodeElement2 codeElement in projectItem.FileCodeModel.CodeElements)
+            if (project.Name.EndsWith("Business") || project.Name.EndsWith("Bll"))
             {
-                if (codeElement is CodeNamespace)
-                {
-                    var nspace = codeElement as CodeNamespace;
+                CommonHelpers.CreateFoldersIfNotExists(project, new string[] { "Abstract", "Concrete" });
 
-                    foreach (CodeClass property in nspace.Members)
+                foreach (ProjectItem item in project.ProjectItems)
+                {
+                    var projectTemplate = solution2.GetProjectItemTemplate("Interface", "CSharp");
+                    var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(projectItem.Name);
+                    var fileParameters = new CreateFileParameters
+                    {
+                        FileNameWithoutExtension = fileNameWithoutExtension,
+                        ProjectItem = item,
+                        ProjectName = project.Name,
+                        ProjectTemplate = projectTemplate
+                    };
+                    if (item.Name == "Abstract")
                     {
 
-                        if (property is null)
-                            continue;
+                        BusinessFileService.CreateBusinessAbstract(fileParameters);
+                    }
+                    if (item.Name == "Concrete")
+                    {
 
-                        foreach (CodeInterface iface in property.ImplementedInterfaces)
+                        BusinessFileService.CreateBusinessConcrete(fileParameters);
+                    }
+                    if (item.Name == "DependencyResolvers")
+                    {
+                        foreach (ProjectItem iocFolder in item.ProjectItems)
                         {
-                            if (iface.Name == "IEntity")
-                                return true;
+                            BusinessFileService.RegisterAddedFilesToIoc(iocFolder, fileParameters.FileNameWithoutExtension);
+                        }
+                    }
+                }
+            }
+        }
+
+        private void GenerateDataAccess(ProjectItem projectItem, Solution2 solution2, Project project)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            if (project.Name.EndsWith("DataAccess") || project.Name.EndsWith("Dal"))
+            {
+                CommonHelpers.CreateFoldersIfNotExists(project, new string[] { "Abstract", "Concrete\\EntityFramework" });
+
+                foreach (ProjectItem item in project.ProjectItems)
+                {
+                    var projectTemplate = solution2.GetProjectItemTemplate("Interface", "CSharp");
+                    var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(projectItem.Name);
+                    var fileParameters = new CreateFileParameters
+                    {
+                        ProjectItem = item,
+                        ProjectTemplate = projectTemplate,
+                        ProjectName = project.Name,
+                        FileNameWithoutExtension = fileNameWithoutExtension,
+
+                    };
+                    if (item.Name == "Abstract")
+                    {
+                        DataAccessFileService.CreateDalAbstract(fileParameters);
+                    }
+                    if (item.Name == "Concrete")
+                    {
+                        var efFolder = item.ProjectItems.Cast<ProjectItem>().FirstOrDefault(x => x.Name == "EntityFramework");
+                        if (efFolder != null)
+                        {
+                            fileParameters.ProjectItem = efFolder;
+                            DataAccessFileService.CreateDalConcrete(fileParameters);
                         }
 
                     }
                 }
-            }
-            return false;
-        }
 
-        private bool DoesProjectFolderExists(string projectFullName, string folderNameToCheck)
-        {
-            var projectPath = Path.GetDirectoryName(projectFullName);
-
-            return Directory.Exists(Path.Combine(projectPath, folderNameToCheck));
-        }
-        /*
-        private void AddDbSetForGeneratedFile(ProjectItem selectedItem, ProjectItem dbContext)
-        {
-            ThreadHelper.ThrowIfNotOnUIThread();
-
-            foreach (CodeElement codeElement in dbContext.FileCodeModel.CodeElements)
-            {
-                if (codeElement is CodeNamespace)
-                {
-                    var nspace = codeElement as CodeNamespace;
-
-                    foreach (CodeClass codeClass in nspace.Members)
-                    {
-                        if (codeClass is null)
-                            continue;
-
-                        var selectedItemType = selectedItem.Name.Replace(".cs", "");
-                        //var pluralizedName = pluralizer.Pluralize(selectedItemType);
-
-                        //TODO: Add Pluralized Entity name
-                        var codeDocument = codeClass.ProjectItem.Open().Document;
-                        var textCodeDocument = codeDocument.Object() as TextDocument;
-                        var edited = textCodeDocument.CreateEditPoint(codeClass.GetEndPoint(vsCMPart.vsCMPartBody));
-                        edited.Insert($"public DbSet<{selectedItemType}> {selectedItemType}" + "{ get; set; }");
-                        edited.SmartFormat(textCodeDocument.StartPoint);
-                        codeDocument.Save();
-                    }
-                }
             }
         }
-
-        private static string GetDbContext(ProjectItem projectItem)
-        {
-            ThreadHelper.ThrowIfNotOnUIThread();
-
-            foreach (ProjectItem item in projectItem.ProjectItems)
-            {
-                if (item.Name == "Contexts")
-                {
-                    if (item.ProjectItems.Count > 1)
-                    {
-                        return "MultiContextNotSupported";
-                    }
-                    return item.ProjectItems.Cast<ProjectItem>().FirstOrDefault().Name.Replace(".cs", "");
-                }
-            }
-            return "";
-        }*/
     }
 }

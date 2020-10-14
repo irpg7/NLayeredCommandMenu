@@ -1,11 +1,8 @@
 ﻿using EnvDTE;
 using Microsoft.VisualStudio.Shell;
+using NLayeredContextMenu.Constants;
 using NLayeredContextMenu.Models;
-using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NLayeredContextMenu.Services
 {
@@ -36,21 +33,11 @@ namespace NLayeredContextMenu.Services
 
         private static string CreateDalAbstractFileContent(string fileName, string projectName)
         {
-            return _fmtInterafaceFile
+            return FileContents.DataAccessAbstract
                   .Replace("[projectName]", projectName)
                   .Replace("[fileName]", fileName);
         }
-        private const string _fmtInterafaceFile = @"
-           using System;
-           using Core.DataAccess;
-           using Entities.Concrete;         
-           namespace [projectName].Abstract
-           {
-           public interface I[fileName]Dal:IEntityRepository<[fileName]>
-           {
-           }
-           }
-";
+        
         #endregion
 
         #region Concrete
@@ -67,7 +54,7 @@ namespace NLayeredContextMenu.Services
                 p.Insert(CreateDalConcreteFileContent(fileParameters.FileNameWithoutExtension, fileParameters.ProjectName, GetDbContext(fileParameters.ProjectItem)));
                 p.SmartFormat(textDocument.StartPoint);
                 addedItemDocument.Save();
-               // AddDbSetToContext(fileParameters.ProjectItem);
+                AddDbSetToContext(fileParameters.ProjectItem);
             }
             catch
             {
@@ -77,26 +64,12 @@ namespace NLayeredContextMenu.Services
         }
         private static string CreateDalConcreteFileContent(string fileName, string projectName, string dbContextName)
         {
-            return _fmtClassFile
+            return FileContents.DataAccessConcrete
                   .Replace("[projectName]", projectName)
                   .Replace("[fileName]", fileName)
                   .Replace("[DbContextName]", dbContextName);
         }
-        private const string _fmtClassFile = @"
-            using System;
-            using System.Linq;
-            using Core.DataAccess.EntityFramework;
-            using Entities.Concrete;
-            using [projectName].Abstract;
-            using DataAccess.Concrete.EntityFramework.Contexts;
-            
-            namespace [projectName].Concrete.EntityFramework
-            {
-            public class Ef[fileName]Dal:EfEntityRepositoryBase<[fileName],[DbContextName]>,I[fileName]Dal
-            {
-            }
-            }
-        ";
+       
         private static string GetDbContext(ProjectItem projectItem)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
@@ -117,7 +90,7 @@ namespace NLayeredContextMenu.Services
         private static void AddDbSetToContext(ProjectItem projectItem)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
-            
+
             var contextProjectItem = projectItem.ProjectItems.Cast<ProjectItem>()
                 .FirstOrDefault(x => x.Name == "Contexts").ProjectItems.Cast<ProjectItem>()
                 .FirstOrDefault();
@@ -131,18 +104,17 @@ namespace NLayeredContextMenu.Services
                         if (classMember is null)
                             continue;
 
-                        foreach (CodeProperty property in classMember.Members)
-                        {
-                            var infoLocation = property.EndPoint;
-                        }
+                        var selectedItemType = projectItem.Name.Replace(".cs", "");
+                        var pluralizedName = selectedItemType;//.Pluralize();
+                        var codeDocument = classMember.ProjectItem.Open().Document;
+                        var textCodeDocument = codeDocument.Object() as TextDocument;
+                        var edited = textCodeDocument.CreateEditPoint(classMember.GetEndPoint(vsCMPart.vsCMPartBody));
+                        edited.Insert($"public DbSet<{selectedItemType}> {pluralizedName}" + "{ get; set; }");
+                        edited.SmartFormat(textCodeDocument.StartPoint);
+                        codeDocument.Save();
                     }
                 }
             }
-
-
-
-
-
         }
         #endregion
     }

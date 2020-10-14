@@ -1,5 +1,6 @@
 ﻿using EnvDTE;
 using Microsoft.VisualStudio.Shell;
+using NLayeredContextMenu.Constants;
 using NLayeredContextMenu.Models;
 using System;
 using System.Collections.Generic;
@@ -37,29 +38,12 @@ namespace NLayeredContextMenu.Services
         }
         private static string CreateBusinessAbstractFileContent(string fileName, string projectName)
         {
-            return _fmtClassFile
+            return FileContents.BusinessAbstractContent
                     .Replace("[projectName]", projectName)
                     .Replace("[fileName]", fileName);
 
         }
-        private const string _fmtClassFile = @"
-            using Entities.Concrete;
-            using System.Collections.Generic;
-            using Core.Utilities.Results;
-            
-            
-            namespace [projectName].Abstract
-            {
-                public interface I[fileName]Service
-                {
-                    IDataResult<[fileName]> Get(int id);
-                    IDataResult<List<[fileName]>> GetList();
-                    IResult Add([fileName] entity);
-                    IResult Update([fileName] entity);
-                    IResult Delete(int id);
-                }
-            }
-";
+      
         #endregion
 
         #region Concrete
@@ -86,63 +70,12 @@ namespace NLayeredContextMenu.Services
         private static string CreateBusinessConcreteFileContent(string fileName, string projectName)
         {
             string camelCasedFileName = char.ToLowerInvariant(fileName[0]) + fileName.Substring(1);
-            return _fmtConcreteFile
+            return FileContents.BusinessConcreteContent
                   .Replace("[projectName]", projectName)
                   .Replace("[fileName]", fileName)
                   .Replace("[camelCasedFileName]", camelCasedFileName);
         }
-        private const string _fmtConcreteFile = @"
-           using System;
-           using System.Linq;
-           using System.Collections.Generic;
-           using Entities.Concrete;
-           using DataAccess.Abstract;
-           using [projectName].Abstract;
-           using Core.Utilities.Results;
-           using Business.Constants;
-          
-            namespace [projectName].Concrete
-           {
-            public class [fileName]Manager:I[fileName]Service
-           {
-            private I[fileName]Dal _[camelCasedFileName]Dal;
-            public [fileName]Manager(I[fileName]Dal [camelCasedFileName]Dal)
-           {
-            _[camelCasedFileName]Dal=[camelCasedFileName]Dal;
-           }
-
-            public IDataResult<[fileName]> Get(int id)
-           {
-            return new SuccessDataResult<[fileName]>(_[camelCasedFileName]Dal.Get(x=>x.Id == id));
-           }
-
-            public IDataResult<List<[fileName]>> GetList()
-           {
-            return new SuccessDataResult<List<[fileName]>>(_[camelCasedFileName]Dal.GetList());
-           }
-
-            public IResult Add([fileName] entity)
-           {
-              _[camelCasedFileName]Dal.Add(entity);
-              return new SuccessResult(Messages.[fileName]Added);
-           }
-
-            public IResult Update([fileName] entity)
-           {
-              _[camelCasedFileName]Dal.Update(entity);
-              return new SuccessResult(Messages.[fileName]Updated);
-           }
-
-            public IResult Delete(int id)
-           {
-             var entity = Get(id).Data;
-             _[camelCasedFileName]Dal.Delete(entity);
-             return new SuccessResult(Messages.[fileName]Deleted);
-           }
-
-           }
-
-           }";
+        
         #endregion
 
 
