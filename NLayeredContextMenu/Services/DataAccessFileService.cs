@@ -1,4 +1,5 @@
 ﻿using EnvDTE;
+using Humanizer;
 using Microsoft.VisualStudio.Shell;
 using NLayeredContextMenu.Constants;
 using NLayeredContextMenu.Models;
@@ -54,7 +55,6 @@ namespace NLayeredContextMenu.Services
                 p.Insert(CreateDalConcreteFileContent(fileParameters.FileNameWithoutExtension, fileParameters.ProjectName, GetDbContext(fileParameters.ProjectItem)));
                 p.SmartFormat(textDocument.StartPoint);
                 addedItemDocument.Save();
-                AddDbSetToContext(fileParameters.ProjectItem);
             }
             catch
             {
@@ -87,14 +87,14 @@ namespace NLayeredContextMenu.Services
             }
             return "";
         }
-        private static void AddDbSetToContext(ProjectItem projectItem)
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "VSTHRD010:Invoke single-threaded types on Main thread", Justification = "<Pending>")]
+        public static void AddDbSetToContext(ProjectItem entityItem,ProjectItem dbContextItem)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            var contextProjectItem = projectItem.ProjectItems.Cast<ProjectItem>()
-                .FirstOrDefault(x => x.Name == "Contexts").ProjectItems.Cast<ProjectItem>()
-                .FirstOrDefault();
-            foreach (CodeElement codeElement in contextProjectItem.FileCodeModel.CodeElements)
+            
+            foreach (CodeElement codeElement in dbContextItem.FileCodeModel.CodeElements)
             {
                 if (codeElement is CodeNamespace)
                 {
@@ -104,8 +104,8 @@ namespace NLayeredContextMenu.Services
                         if (classMember is null)
                             continue;
 
-                        var selectedItemType = projectItem.Name.Replace(".cs", "");
-                        var pluralizedName = selectedItemType;//.Pluralize();
+                        var selectedItemType = entityItem.Name.Replace(".cs", "");
+                        var pluralizedName = selectedItemType.Pluralize();
                         var codeDocument = classMember.ProjectItem.Open().Document;
                         var textCodeDocument = codeDocument.Object() as TextDocument;
                         var edited = textCodeDocument.CreateEditPoint(classMember.GetEndPoint(vsCMPart.vsCMPartBody));

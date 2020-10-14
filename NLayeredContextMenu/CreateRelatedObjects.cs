@@ -151,6 +151,7 @@ namespace NLayeredContextMenu
             }
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "VSTHRD010:Invoke single-threaded types on Main thread", Justification = "<Pending>")]
         private void GenerateDataAccess(ProjectItem projectItem, Solution2 solution2, Project project)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
@@ -181,6 +182,12 @@ namespace NLayeredContextMenu
                         {
                             fileParameters.ProjectItem = efFolder;
                             DataAccessFileService.CreateDalConcrete(fileParameters);
+
+                            var dbContextItem = efFolder.ProjectItems.Cast<ProjectItem>()
+                            .FirstOrDefault(x => x.Name == "Contexts").ProjectItems.Cast<ProjectItem>()
+                            .FirstOrDefault();
+
+                            DataAccessFileService.AddDbSetToContext(projectItem,dbContextItem);
                         }
 
                     }
