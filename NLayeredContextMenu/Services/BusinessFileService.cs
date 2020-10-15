@@ -13,70 +13,15 @@ namespace NLayeredContextMenu.Services
 {
     public static class BusinessFileService
     {
-        #region Abstract
+        #region Commands
 
-        public static void CreateBusinessAbstract(CreateFileParameters fileParameters)
-        {
-            ThreadHelper.ThrowIfNotOnUIThread();
-            try
-            {
-                var addedItem = fileParameters.ProjectItem.ProjectItems.AddFromTemplate(fileParameters.ProjectTemplate,
-                                                                        $"I{fileParameters.FileNameWithoutExtension}Service.cs");
-
-                var addedItemDocument = addedItem.Document;
-                var textDocument = addedItemDocument.Object() as TextDocument;
-                var p = textDocument.StartPoint.CreateEditPoint();
-                p.Delete(textDocument.EndPoint);
-                p.Insert(CreateBusinessAbstractFileContent(fileParameters.FileNameWithoutExtension, fileParameters.ProjectName));
-                p.SmartFormat(textDocument.StartPoint);
-                addedItemDocument.Save();
-            }
-            catch
-            {
-                throw;
-            }
-        }
-        private static string CreateBusinessAbstractFileContent(string fileName, string projectName)
-        {
-            return FileContents.BusinessAbstractContent
-                    .Replace("[projectName]", projectName)
-                    .Replace("[fileName]", fileName);
-
-        }
-      
         #endregion
 
-        #region Concrete
-        public static void CreateBusinessConcrete(CreateFileParameters fileParameters)
-        {
-            ThreadHelper.ThrowIfNotOnUIThread();
-            try
-            {
-                var addedItem = fileParameters.ProjectItem.ProjectItems.AddFromTemplate(fileParameters.ProjectTemplate, $"{fileParameters.FileNameWithoutExtension}Manager.cs");
-                var addedItemDocument = addedItem.Document;
-                var textDocument = addedItemDocument.Object() as TextDocument;
-                var p = textDocument.StartPoint.CreateEditPoint();
-                p.Delete(textDocument.EndPoint);
-                p.Insert(CreateBusinessConcreteFileContent(fileParameters.FileNameWithoutExtension, fileParameters.ProjectName));
-                p.SmartFormat(textDocument.StartPoint);
-                addedItemDocument.Save();
-            }
-            catch
-            {
-                throw;
-            }
-        }
+        #region Queries
 
-        private static string CreateBusinessConcreteFileContent(string fileName, string projectName)
-        {
-            string camelCasedFileName = char.ToLowerInvariant(fileName[0]) + fileName.Substring(1);
-            return FileContents.BusinessConcreteContent
-                  .Replace("[projectName]", projectName)
-                  .Replace("[fileName]", fileName)
-                  .Replace("[camelCasedFileName]", camelCasedFileName);
-        }
-        
         #endregion
+
+
 
 
         #region DependencyResolvers

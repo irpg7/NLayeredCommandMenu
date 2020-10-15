@@ -36,77 +36,180 @@ namespace NLayeredContextMenu.Constants
             }
         ";
 
-        public const string BusinessAbstractContent = @"
-            using Entities.Concrete;
-            using System.Collections.Generic;
-            using Core.Utilities.Results;
-            
-            
-            namespace [projectName].Abstract
+        public const string BusinessCreateCommand = @"
+using [projectName].Common.Constants;
+using Core.Utilities.Results;
+using DataAccess.Abstract;
+using Entities.Concrete;
+using MediatR;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Linq;
+
+namespace [projectName].Handlers.[pluralizedName].Commands
+{
+	public class Create[fileName]Command : IRequest<IResult>
+	{
+		
+
+		public class Create[fileName]CommandHandler : IRequestHandler<Create[fileName]Command, IResult>
+		{
+			  private readonly I[fileName]Repository _[camelCasedFileName]Repository;
+			  private readonly IMediator _mediator;
+              private IMapper _mapper;
+			  public Create[fileName]CommandHandler(I[fileName]Repository [camelCasedFileName]Repository, IMediator mediator,IMapper mapper)
+			  {
+			  	    _[camelCasedFileName]Repository = [camelCasedFileName]Repository;
+			  	    _mediator = mediator;
+                    _mapper = mapper     
+			  }
+              
+			  public async Task<IResult> Handle(Create[fileName]Command request, CancellationToken cancellationToken)
+			  {
+			  				var added[fileName] = _mapper.Map<DestinationType>(source);
+			  				_[camelCasedFileName]Repository.AddAsync(added[fileName]);
+			  				return new SuccessResult(Messages.[fileName]Added);
+			  }
+		}
+	}
+}";
+        public const string BusinessUpdateCommand = @"
+using [projectName].Common.Constants;
+using Core.Utilities.Results;
+using DataAccess.Abstract;
+using Entities.Concrete;
+using MediatR;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Linq;
+
+namespace [projectName].Handlers.[pluralizedName].Commands
+{
+    public class Update[fileName]Command:IRequest<IResult>
+    {
+
+
+
+
+        public class Update[fileName]CommandHandler : IRequestHandler<Update[fileName]Command, IResult>
+        {
+            I[fileName]Repository _[camelCasedFileName]Repository;
+
+            public Update[fileName]CommandHandler(I[fileName]Repository [camelCasedFileName]Repository)
             {
-                public interface I[fileName]Service
-                {
-                    IDataResult<[fileName]> Get(int id);
-                    IDataResult<List<[fileName]>> GetList();
-                    IResult Add([fileName] entity);
-                    IResult Update([fileName] entity);
-                    IResult Delete(int id);
-                }
+                _[camelCasedFileName]Repository = [camelCasedFileName]Repository;
             }
-            ";
 
-        public const string BusinessConcreteContent = @"
-           using System;
-           using System.Linq;
-           using System.Collections.Generic;
-           using Entities.Concrete;
-           using DataAccess.Abstract;
-           using [projectName].Abstract;
-           using Core.Utilities.Results;
-           using Business.Constants;
-          
-            namespace [projectName].Concrete
-           {
-            public class [fileName]Manager:I[fileName]Service
-           {
-            private I[fileName]Dal _[camelCasedFileName]Dal;
-            public [fileName]Manager(I[fileName]Dal [camelCasedFileName]Dal)
-           {
-            _[camelCasedFileName]Dal=[camelCasedFileName]Dal;
-           }
+            public async Task<IResult> Handle(Update[fileName]Command request, CancellationToken cancellationToken)
+            {
+                var entityToUpdate = _mapper.Map<DestinationType>(source);
+                await _[camelCasedFileName]Repository.UpdateAsync(entityToUpdate);
 
-            public IDataResult<[fileName]> Get(int id)
-           {
-            return new SuccessDataResult<[fileName]>(_[camelCasedFileName]Dal.Get(x=>x.Id == id));
-           }
+                return new SuccessResult(Messages.[fileName]Updated);
+            }
+        }
+    }
+}
+        ";
+        public const string BusinessDeleteCommand = @"
+using [projectName].Common.Constants;
+using Core.Utilities.Results;
+using DataAccess.Abstract;
+using Entities.Concrete;
+using MediatR;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Linq;
+namespace [projectName].Handlers.[pluralizedName].Commands
+{
+            public class Delete[fileName]Command:IRequest<IResult>
+    {
+        public int Id { get; set; }
 
-            public IDataResult<List<[fileName]>> GetList()
-           {
-            return new SuccessDataResult<List<[fileName]>>(_[camelCasedFileName]Dal.GetList());
-           }
 
-            public IResult Add([fileName] entity)
-           {
-              _[camelCasedFileName]Dal.Add(entity);
-              return new SuccessResult(Messages.[fileName]Added);
-           }
+        public class Delete[fileName]CommandHandler : IRequestHandler<Delete[fileName]Command, IResult>
+        {
+            I[fileName]Repository _[camelCasedFileName]Repository;
 
-            public IResult Update([fileName] entity)
-           {
-              _[camelCasedFileName]Dal.Update(entity);
-              return new SuccessResult(Messages.[fileName]Updated);
-           }
+            public Delete[fileName]CommandHandler(I[fileName]Repository [camelCasedFileName]Repository)
+            {
+               _[camelCasedFileName]Repository = [camelCasedFileName]Repository;
+            }
 
-            public IResult Delete(int id)
-           {
-             var entity = Get(id).Data;
-             _[camelCasedFileName]Dal.Delete(entity);
-             return new SuccessResult(Messages.[fileName]Deleted);
-           }
+            public async Task<IResult> Handle(Delete[fileName]Command request, CancellationToken cancellationToken)
+            {
+                var recordToDelete = await _[camelCasedFileName]Repository.GetAsync(x => x.Id == request.Id);
 
-           }
+                await _[camelCasedFileName]Repository.DeleteAsync(recordToDelete);
 
-           }";
+                return new SuccessResult(Messages.[fileName]Deleted);
+            }
+        }
+    }
+}
+        ";
+        public const string BusinessGetQuery = @"
+using Core.Entities.Concrete;
+using Core.Utilities.Results;
+using DataAccess.Abstract;
+using MediatR;
+using System.Threading;
+using System.Threading.Tasks;
+
+        namespace [projectName].Handlers.[pluralizedName].Queries
+{
+    public class Get[fileName]Query:IRequest<IDataResult<[fileName]>>
+    {
+        public int Id { get; set; }
+
+        public class Get[fileName]QueryHandler : IRequestHandler<Get[fileName]Query, IDataResult<[fileName]>>
+        {
+            I[fileName]Repository _[camelCasedFileName]Repository;
+
+            public Get[fileName]QueryHandler(I[fileName]Repository [camelCasedFileName]Repository)
+            {
+                _[camelCasedFileName]Repository = [camelCasedFileName]Repository;
+            }
+
+            public async Task<IDataResult<[fileName]>> Handle(Get[fileName]Query request, CancellationToken cancellationToken)
+            {
+                return new SuccessDataResult<[fileName]>(await _[camelCasedFileName]Repository.GetAsync(x => x.Id == request.Id));
+            }
+        }
+    }
+}
+        ";
+        public const string BusinessGetListQuery = @"
+         using Core.Entities.Concrete;
+using Core.Utilities.Results;
+using DataAccess.Abstract;
+using MediatR;
+using System.Threading;
+using System.Threading.Tasks;
+
+        namespace [projectName].Handlers.[pluralizedName].Queries
+{
+    public class Get[pluralizedFileName]Query:IRequest<IDataResult<IEnumerable<[fileName]>>>
+    {
+      
+        public class Get[pluralizedFileName]QueryHandler : IRequestHandler<Get[pluralizedFileName]Query, IDataResult<IEnumerable<[fileName]>>>
+        {
+            I[fileName]Repository _[camelCasedFileName]Repository;
+
+            public Get[pluralizedFileName]QueryHandler(I[fileName]Repository [camelCasedFileName]Repository)
+            {
+                _[camelCasedFileName]Repository = [camelCasedFileName]Repository;
+            }
+
+            public async Task<IDataResult<IEnumerable<[fileName]>>> Handle(Get[pluralizedFileName]Query request, CancellationToken cancellationToken)
+            {
+                return new SuccessDataResult<IEnumerable<[fileName]>>(await _[camelCasedFileName]Repository.GetListAsync());
+            }
+        }
+    }
+}
+        ";
+
 
 
     }

@@ -15,6 +15,7 @@ using NLayeredContextMenu.Models;
 using NLayeredContextMenu.Services;
 using NLayeredContextMenu.Constants;
 using NLayeredContextMenu.Helpers;
+using Humanizer;
 
 namespace NLayeredContextMenu
 {
@@ -117,7 +118,7 @@ namespace NLayeredContextMenu
             ThreadHelper.ThrowIfNotOnUIThread();
             if (project.Name.EndsWith("Business") || project.Name.EndsWith("Bll"))
             {
-                CommonHelpers.CreateFoldersIfNotExists(project, new string[] { "Abstract", "Concrete" });
+                CommonHelpers.CreateFoldersIfNotExists(project, new string[] { "Handlers" });
 
                 foreach (ProjectItem item in project.ProjectItems)
                 {
@@ -130,17 +131,19 @@ namespace NLayeredContextMenu
                         ProjectName = project.Name,
                         ProjectTemplate = projectTemplate
                     };
-                    if (item.Name == "Abstract")
-                    {
 
+                    if (item.Name == "Handlers")
+                    {
+                        CommonHelpers.CreateFoldersIfNotExists(project,
+                            new string[] 
+                            { 
+                                "Handlers\\" + fileNameWithoutExtension.Pluralize() + "\\Commands",
+                                "Handlers\\" + fileNameWithoutExtension.Pluralize() + "\\Queries"
+                            });
                         BusinessFileService.CreateBusinessAbstract(fileParameters);
                     }
-                    if (item.Name == "Concrete")
-                    {
 
-                        BusinessFileService.CreateBusinessConcrete(fileParameters);
-                    }
-                    if (item.Name == "DependencyResolvers")
+                    if (item.Name == "Common\\DependencyResolvers")
                     {
                         foreach (ProjectItem iocFolder in item.ProjectItems)
                         {
