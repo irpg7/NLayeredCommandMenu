@@ -16,7 +16,7 @@ namespace NLayeredContextMenu.Services
             try
             {
                 var addedItem = fileParameters.ProjectItem.ProjectItems.AddFromTemplate(fileParameters.ProjectTemplate,
-                                                                        $"I{fileParameters.FileNameWithoutExtension}Dal.cs");
+                                                                        $"I{fileParameters.FileNameWithoutExtension}Repository.cs");
 
                 var addedItemDocument = addedItem.Document;
                 var textDocument = addedItemDocument.Object() as TextDocument;
@@ -47,7 +47,7 @@ namespace NLayeredContextMenu.Services
             ThreadHelper.ThrowIfNotOnUIThread();
             try
             {
-                var addedItem = fileParameters.ProjectItem.ProjectItems.AddFromTemplate(fileParameters.ProjectTemplate, $"Ef{fileParameters.FileNameWithoutExtension}Dal.cs");
+                var addedItem = fileParameters.ProjectItem.ProjectItems.AddFromTemplate(fileParameters.ProjectTemplate, $"Ef{fileParameters.FileNameWithoutExtension}Repository.cs");
                 var addedItemDocument = addedItem.Document;
                 var textDocument = addedItemDocument.Object() as TextDocument;
                 var p = textDocument.StartPoint.CreateEditPoint();

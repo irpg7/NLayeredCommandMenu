@@ -22,6 +22,7 @@ namespace NLayeredContextMenu
     /// <summary>
     /// Command handler
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "VSTHRD010:Invoke single-threaded types on Main thread", Justification = "<Pending>")]
     internal sealed class CreateRelatedObjects
     {
 
@@ -131,21 +132,36 @@ namespace NLayeredContextMenu
                         ProjectName = project.Name,
                         ProjectTemplate = projectTemplate
                     };
-
-                    if (item.Name == "Handlers")
-                    {
-                        CommonHelpers.CreateFoldersIfNotExists(project,
-                            new string[] 
-                            { 
+                    CommonHelpers.CreateFoldersIfNotExists(project,
+                            new string[]
+                            {
                                 "Handlers\\" + fileNameWithoutExtension.Pluralize() + "\\Commands",
                                 "Handlers\\" + fileNameWithoutExtension.Pluralize() + "\\Queries"
                             });
-                        BusinessFileService.CreateBusinessAbstract(fileParameters);
+                    if (item.Name == "Handlers")
+                    {
+                        var commandsFolder = item.ProjectItems.Cast<ProjectItem>()
+                            .FirstOrDefault(x=>x.Name == fileNameWithoutExtension.Pluralize())
+                            .ProjectItems.Cast<ProjectItem>()
+                            .FirstOrDefault(x => x.Name == "Commands");
+                        var queriesFolder = item.ProjectItems.Cast<ProjectItem>()
+                            .FirstOrDefault(x => x.Name == fileNameWithoutExtension.Pluralize())
+                            .ProjectItems.Cast<ProjectItem>()
+                            .FirstOrDefault(x => x.Name == "Queries");
+
+                        fileParameters.ProjectItem = commandsFolder;
+                        BusinessFileService.GenerateCreateCommand(fileParameters);
+                        BusinessFileService.GenerateUpdateCommand(fileParameters);
+                        BusinessFileService.GenerateDeleteCommand(fileParameters);
+                        fileParameters.ProjectItem = queriesFolder;
+                        BusinessFileService.GenerateGetQuery(fileParameters);
+                        BusinessFileService.GenerateGetListQuery(fileParameters);
                     }
 
-                    if (item.Name == "Common\\DependencyResolvers")
+                    if (item.Name == "Common")
                     {
-                        foreach (ProjectItem iocFolder in item.ProjectItems)
+                        var resolverFolder = item.ProjectItems.Cast<ProjectItem>().FirstOrDefault(x => x.Name == "DependencyResolvers").ProjectItems;
+                        foreach (ProjectItem iocFolder in resolverFolder)
                         {
                             BusinessFileService.RegisterAddedFilesToIoc(iocFolder, fileParameters.FileNameWithoutExtension);
                         }
@@ -154,7 +170,7 @@ namespace NLayeredContextMenu
             }
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "VSTHRD010:Invoke single-threaded types on Main thread", Justification = "<Pending>")]
+        
         private void GenerateDataAccess(ProjectItem projectItem, Solution2 solution2, Project project)
         {
             ThreadHelper.ThrowIfNotOnUIThread();

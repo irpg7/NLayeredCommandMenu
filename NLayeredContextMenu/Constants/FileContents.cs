@@ -11,10 +11,10 @@ namespace NLayeredContextMenu.Constants
         public const string DataAccessAbstract = @"
            using System;
            using Core.DataAccess;
-           using Entities.Concrete;         
+           using Entities.Concrete;
            namespace [projectName].Abstract
            {
-           public interface I[fileName]Dal:IEntityRepository<[fileName]>
+           public interface I[fileName]Repository:IEntityRepositoryBase<[fileName]>
            {
            }
            }
@@ -30,7 +30,7 @@ namespace NLayeredContextMenu.Constants
             
             namespace [projectName].Concrete.EntityFramework
             {
-            public class Ef[fileName]Dal:EfEntityRepositoryBase<[fileName],[DbContextName]>,I[fileName]Dal
+            public class Ef[fileName]Repository:EfEntityRepositoryBase<[fileName],[DbContextName]>,I[fileName]Repository
             {
             }
             }
@@ -42,25 +42,25 @@ using Core.Utilities.Results;
 using DataAccess.Abstract;
 using Entities.Concrete;
 using MediatR;
+using AutoMapper;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Linq;
 
-namespace [projectName].Handlers.[pluralizedName].Commands
+namespace [projectName].Handlers.[pluralizedFileName].Commands
 {
 	public class Create[fileName]Command : IRequest<IResult>
 	{
-		
+
 
 		public class Create[fileName]CommandHandler : IRequestHandler<Create[fileName]Command, IResult>
 		{
 			  private readonly I[fileName]Repository _[camelCasedFileName]Repository;
 			  private readonly IMediator _mediator;
               private IMapper _mapper;
-			  public Create[fileName]CommandHandler(I[fileName]Repository [camelCasedFileName]Repository, IMediator mediator,IMapper mapper)
+			  public Create[fileName]CommandHandler(I[fileName]Repository [camelCasedFileName]Repository,IMapper mapper)
 			  {
 			  	    _[camelCasedFileName]Repository = [camelCasedFileName]Repository;
-			  	    _mediator = mediator;
                     _mapper = mapper     
 			  }
               
@@ -79,25 +79,24 @@ using Core.Utilities.Results;
 using DataAccess.Abstract;
 using Entities.Concrete;
 using MediatR;
+using AutoMapper;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Linq;
 
-namespace [projectName].Handlers.[pluralizedName].Commands
+namespace [projectName].Handlers.[pluralizedFileName].Commands
 {
     public class Update[fileName]Command:IRequest<IResult>
     {
 
-
-
-
         public class Update[fileName]CommandHandler : IRequestHandler<Update[fileName]Command, IResult>
         {
             I[fileName]Repository _[camelCasedFileName]Repository;
-
-            public Update[fileName]CommandHandler(I[fileName]Repository [camelCasedFileName]Repository)
+            private IMapper _mapper;
+            public Update[fileName]CommandHandler(I[fileName]Repository [camelCasedFileName]Repository,IMapper mapper)
             {
                 _[camelCasedFileName]Repository = [camelCasedFileName]Repository;
+                _mapper = mapper;
             }
 
             public async Task<IResult> Handle(Update[fileName]Command request, CancellationToken cancellationToken)
@@ -120,7 +119,7 @@ using MediatR;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Linq;
-namespace [projectName].Handlers.[pluralizedName].Commands
+namespace [projectName].Handlers.[pluralizedFileName].Commands
 {
             public class Delete[fileName]Command:IRequest<IResult>
     {
@@ -155,8 +154,9 @@ using DataAccess.Abstract;
 using MediatR;
 using System.Threading;
 using System.Threading.Tasks;
+using Entities.Concrete;
 
-        namespace [projectName].Handlers.[pluralizedName].Queries
+        namespace [projectName].Handlers.[pluralizedFileName].Queries
 {
     public class Get[fileName]Query:IRequest<IDataResult<[fileName]>>
     {
@@ -186,8 +186,10 @@ using DataAccess.Abstract;
 using MediatR;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using Entities.Concrete;
 
-        namespace [projectName].Handlers.[pluralizedName].Queries
+        namespace [projectName].Handlers.[pluralizedFileName].Queries
 {
     public class Get[pluralizedFileName]Query:IRequest<IDataResult<IEnumerable<[fileName]>>>
     {
