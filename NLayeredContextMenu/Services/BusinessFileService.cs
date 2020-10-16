@@ -97,7 +97,7 @@ namespace NLayeredContextMenu.Services
                     var textDocument = codeDocument.Object() as TextDocument;
                     var lines = textDocument.CreateEditPoint().GetLines(textDocument.StartPoint.Line, textDocument.EndPoint.Line + 1);
                     var valueToSearch = "(ContainerBuilder builder)\r\n        {\r\n";
-                    lines = lines.Insert(lines.IndexOf(valueToSearch) + valueToSearch.Length, $"builder.RegisterType<Ef{entityName}Dal>().As<I{entityName}Dal>().SingleInstance();\r\n");
+                    lines = lines.Insert(lines.IndexOf(valueToSearch) + valueToSearch.Length, $"builder.RegisterType<Ef{entityName}Repository>().As<I{entityName}Repository>().SingleInstance();\r\n");
                     var editedDocument = textDocument.CreateEditPoint();
                     editedDocument.Delete(textDocument.EndPoint);
                     editedDocument.Insert(lines);
@@ -114,7 +114,7 @@ namespace NLayeredContextMenu.Services
                     var textDocument = codeDocument.Object() as TextDocument;
                     var lines = textDocument.CreateEditPoint().GetLines(textDocument.StartPoint.Line, textDocument.EndPoint.Line + 1);
                     var valueToSearch = "(IServiceCollection services)\r\n        {\r\n";
-                    lines = lines.Insert(lines.IndexOf(valueToSearch) + valueToSearch.Length, $"services.AddSingleton<I{entityName}Dal,Ef{entityName}Dal>();\r\n");
+                    lines = lines.Insert(lines.IndexOf(valueToSearch) + valueToSearch.Length, $"services.AddSingleton<I{entityName}Repository,Ef{entityName}Repository>();\r\n");
                     var editedDocument = textDocument.CreateEditPoint();
                     editedDocument.Delete(textDocument.EndPoint);
                     editedDocument.Insert(lines);
