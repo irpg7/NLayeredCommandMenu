@@ -141,11 +141,11 @@ namespace NLayeredContextMenu
                     if (item.Name == "Handlers")
                     {
                         var commandsFolder = item.ProjectItems.Cast<ProjectItem>()
-                            .FirstOrDefault(x=>x.Name == fileNameWithoutExtension.Pluralize())
+                            .FirstOrDefault(x=>x.Name == fileNameWithoutExtension.Pluralize())?
                             .ProjectItems.Cast<ProjectItem>()
                             .FirstOrDefault(x => x.Name == "Commands");
                         var queriesFolder = item.ProjectItems.Cast<ProjectItem>()
-                            .FirstOrDefault(x => x.Name == fileNameWithoutExtension.Pluralize())
+                            .FirstOrDefault(x => x.Name == fileNameWithoutExtension.Pluralize())?
                             .ProjectItems.Cast<ProjectItem>()
                             .FirstOrDefault(x => x.Name == "Queries");
 

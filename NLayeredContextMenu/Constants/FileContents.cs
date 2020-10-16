@@ -61,7 +61,7 @@ namespace [projectName].Handlers.[pluralizedFileName].Commands
 			  public Create[fileName]CommandHandler(I[fileName]Repository [camelCasedFileName]Repository,IMapper mapper)
 			  {
 			  	    _[camelCasedFileName]Repository = [camelCasedFileName]Repository;
-                    _mapper = mapper     
+                    _mapper = mapper;     
 			  }
               
 			  public async Task<IResult> Handle(Create[fileName]Command request, CancellationToken cancellationToken)
