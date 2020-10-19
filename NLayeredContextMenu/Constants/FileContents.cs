@@ -56,7 +56,6 @@ namespace [projectName].Handlers.[pluralizedFileName].Commands
 		public class Create[fileName]CommandHandler : IRequestHandler<Create[fileName]Command, IResult>
 		{
 			  private readonly I[fileName]Repository _[camelCasedFileName]Repository;
-			  private readonly IMediator _mediator;
               private IMapper _mapper;
 			  public Create[fileName]CommandHandler(I[fileName]Repository [camelCasedFileName]Repository,IMapper mapper)
 			  {
@@ -66,8 +65,8 @@ namespace [projectName].Handlers.[pluralizedFileName].Commands
               
 			  public async Task<IResult> Handle(Create[fileName]Command request, CancellationToken cancellationToken)
 			  {
-			  				var added[fileName] = _mapper.Map<DestinationType>(source);
-			  				_[camelCasedFileName]Repository.AddAsync(added[fileName]);
+			  				var added[fileName] = _mapper.Map<[fileName]>(request);
+			  				await _[camelCasedFileName]Repository.AddAsync(added[fileName]);
 			  				return new SuccessResult(Messages.[fileName]Added);
 			  }
 		}
@@ -101,7 +100,7 @@ namespace [projectName].Handlers.[pluralizedFileName].Commands
 
             public async Task<IResult> Handle(Update[fileName]Command request, CancellationToken cancellationToken)
             {
-                var entityToUpdate = _mapper.Map<DestinationType>(source);
+                var entityToUpdate = _mapper.Map<[fileName]>(request);
                 await _[camelCasedFileName]Repository.UpdateAsync(entityToUpdate);
 
                 return new SuccessResult(Messages.[fileName]Updated);
